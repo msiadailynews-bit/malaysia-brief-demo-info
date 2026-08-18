@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Malaysia Brief</title>
+<meta name="description" content="An automated daily news digest that reads Malaysia's news and emails our team a business-focused summary.">
+</head>
+<body>
+<style>
+  :root{
+    --ink:#17222f; --ink-soft:#4c5a69; --faint:#7c8896;
+    --paper:#e9edf2; --surface:#ffffff; --surface-2:#f4f6f9;
+    --hairline:#d7dde5;
+    --gold:#a9731c; --gold-ink:#5f3f07; --gold-soft:#f4e8ce;
+    --teal:#0e6d77; --teal-ink:#0a4249; --teal-soft:#d7ebed;
+    --shadow:0 1px 2px rgba(20,30,45,.06), 0 14px 40px rgba(20,30,45,.09);
+    --maxw:720px;
+  }
+  /* This page is locked to the light theme on every device. The dark-mode
+     rules below deliberately reuse the light values so the page stays light
+     even when the device (or the preview's theme toggle) is set to dark. */
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ink:#17222f; --ink-soft:#4c5a69; --faint:#7c8896;
+      --paper:#e9edf2; --surface:#ffffff; --surface-2:#f4f6f9; --hairline:#d7dde5;
+      --gold:#a9731c; --gold-ink:#5f3f07; --gold-soft:#f4e8ce;
+      --teal:#0e6d77; --teal-ink:#0a4249; --teal-soft:#d7ebed;
+      --shadow:0 1px 2px rgba(20,30,45,.06), 0 14px 40px rgba(20,30,45,.09);
+    }
+  }
+  :root[data-theme="light"], :root[data-theme="dark"]{
+    --ink:#17222f; --ink-soft:#4c5a69; --faint:#7c8896;
+    --paper:#e9edf2; --surface:#ffffff; --surface-2:#f4f6f9; --hairline:#d7dde5;
+    --gold:#a9731c; --gold-ink:#5f3f07; --gold-soft:#f4e8ce;
+    --teal:#0e6d77; --teal-ink:#0a4249; --teal-soft:#d7ebed;
+    --shadow:0 1px 2px rgba(20,30,45,.06), 0 14px 40px rgba(20,30,45,.09);
+  }
+
+  *{box-sizing:border-box;}
+  .mb{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mb *{max-width:100%;}
+  .serif{font-family:Georgia,"Times New Roman",serif;}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 20px;}
+  .eyebrow{
+    font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:700; color:var(--gold);
+  }
+  /* Content is visible by DEFAULT. Animation is added only when JS confirms it
+     can handle revealing on scroll (class js-anim), so nothing is ever hidden
+     if scripts don't run. */
+  .reveal{opacity:1; transform:none; transition:opacity .7s ease, transform .7s ease;}
+  .js-anim .reveal{opacity:0; transform:translateY(16px);}
+  .js-anim .reveal.in{opacity:1; transform:none;}
+  @media (prefers-reduced-motion:reduce){
+    .js-anim .reveal{opacity:1; transform:none; transition:none;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative; padding:64px 0 44px; text-align:left;
+    border-bottom:1px solid var(--hairline);
+    background:
+      radial-gradient(120% 80% at 90% -10%, var(--gold-soft) 0%, transparent 55%),
+      radial-gradient(120% 80% at -10% 0%, var(--teal-soft) 0%, transparent 50%);
+  }
+  .hero .kicker{display:flex; align-items:center; gap:9px; margin-bottom:20px;}
+  .hero .kicker .dot{width:8px; height:8px; border-radius:50%; background:var(--teal);
+    box-shadow:0 0 0 0 var(--teal); animation:pulse 2.4s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(14,109,119,.5);}70%{box-shadow:0 0 0 9px rgba(14,109,119,0);}100%{box-shadow:0 0 0 0 rgba(14,109,119,0);}}
+  @media (prefers-reduced-motion:reduce){.hero .kicker .dot{animation:none;}}
+  .hero h1{
+    font-size:clamp(38px,10.5vw,68px); line-height:1.02; margin:0;
+    letter-spacing:-.02em; text-wrap:balance; font-weight:700;
+  }
+  .hero h1 .b{color:var(--gold);}
+  .hero .stand{
+    margin:18px 0 0; font-size:clamp(16px,4.4vw,19px); color:var(--ink-soft);
+    max-width:34ch;
+  }
+  .sendchip{
+    display:inline-flex; align-items:center; gap:9px; margin-top:26px;
+    background:var(--surface); border:1px solid var(--hairline); border-radius:999px;
+    padding:8px 15px 8px 12px; font-size:13px; box-shadow:var(--shadow); color:var(--ink-soft);
+    font-variant-numeric:tabular-nums;
+  }
+  .sendchip .tick{width:16px;height:16px;border-radius:50%;background:var(--teal);position:relative;flex:0 0 auto;}
+  .sendchip .tick::after{content:"";position:absolute;inset:0;margin:auto;width:5px;height:8px;border:2px solid #fff;border-top:0;border-left:0;transform:translateY(-1px) rotate(45deg);}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:52px 0;}
+  .lead-label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--teal);margin:0 0 10px;}
+  h2.sec{font-size:clamp(25px,6.5vw,34px); line-height:1.12; margin:0 0 14px; letter-spacing:-.01em; text-wrap:balance;}
+  p.body{font-size:17px; color:var(--ink-soft); margin:0 0 14px; max-width:60ch;}
+
+  .problem{background:var(--surface-2); border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline);}
+
+  /* ---------- PIPELINE ---------- */
+  .flow{position:relative;}
+  .steps{position:relative; margin-top:30px; padding-left:8px;}
+  .rail{position:absolute; left:31px; top:14px; bottom:14px; width:2px; background:var(--hairline); overflow:hidden;}
+  .rail .fill{position:absolute; top:0; left:0; right:0; height:0; background:linear-gradient(var(--teal),var(--gold)); transition:height 1.6s ease;}
+  .flow.playing .rail .fill{height:100%;}
+  .step{position:relative; display:flex; gap:18px; padding:0 0 26px;}
+  .step:last-child{padding-bottom:0;}
+  .node{
+    flex:0 0 auto; width:48px; height:48px; border-radius:14px; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:2px solid var(--hairline);
+    font-family:Georgia,serif; font-size:20px; font-weight:700; color:var(--faint);
+    transition:border-color .4s ease, color .4s ease, background .4s ease, transform .3s ease;
+  }
+  .step.on .node{color:#fff; transform:scale(1.04);}
+  .step.gold.on .node{background:var(--gold); border-color:var(--gold);}
+  .step.teal.on .node{background:var(--teal); border-color:var(--teal);}
+  .step .body-wrap{flex:1 1 auto; padding-top:4px;}
+  .step .tag{font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700;}
+  .step.gold .tag{color:var(--gold);} .step.teal .tag{color:var(--teal);}
+  .step h3{font-size:19px; margin:3px 0 0; letter-spacing:-.01em;}
+  .step .more{margin-top:8px;}
+  .step .more p{font-size:15px; color:var(--ink-soft); margin:0;}
+
+  /* ---------- SAMPLE ---------- */
+  .sample-btn{
+    display:inline-flex; align-items:center; gap:10px; margin-top:6px;
+    background:var(--ink); color:var(--paper); border:0; cursor:pointer;
+    font-size:15px; font-weight:600; padding:13px 20px; border-radius:11px;
+    font-family:inherit; box-shadow:var(--shadow);
+  }
+  .sample-btn:focus-visible{outline:3px solid var(--teal); outline-offset:3px;}
+  /* Native <details> disclosure: no JavaScript required, so it can't be
+     blocked by any security policy. Hide the default marker and
+     drive the open/closed state purely from the [open] attribute. */
+  summary.sample-btn{list-style:none;}
+  summary.sample-btn::-webkit-details-marker{display:none;}
+  summary.sample-btn::marker{content:"";}
+  .sample-btn .ar{transition:transform .3s ease;}
+  .sample-wrap[open] .sample-btn .ar{transform:rotate(90deg);}
+  .sample-btn .lbl-hide{display:none;}
+  .sample-wrap[open] .sample-btn .lbl-show{display:none;}
+  .sample-wrap[open] .sample-btn .lbl-hide{display:inline;}
+  .brief{margin-top:22px;}
+  /* Force the collapse ourselves so it never depends on browser UA quirks. */
+  .sample-wrap:not([open]) .brief{display:none;}
+  .sample-wrap[open] .brief{display:block; animation:briefIn .45s ease both;}
+  @keyframes briefIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  @media (prefers-reduced-motion:reduce){ .sample-wrap[open] .brief{animation:none;} }
+  .brief-card{
+    background:var(--surface); border:1px solid var(--hairline); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .brief-mast{padding:20px 22px 15px; border-bottom:3px solid var(--gold);}
+  .brief-mast .t{font-family:Georgia,serif; font-size:22px; color:var(--ink); line-height:1.1;}
+  .brief-mast .d{font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); margin-top:7px;}
+  .brief-body{padding:16px 22px 22px;}
+  .brief-body h4{font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin:18px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--hairline);}
+  .brief-body h4:first-child{margin-top:0;}
+  .brief-body ul{margin:0 0 6px; padding-left:20px;} .brief-body li{font-size:14.5px; margin:0 0 7px;}
+  .brief-body .theme{font-family:Georgia,serif; font-size:18px; margin:14px 0 7px;}
+  .brief-body p{font-size:14.5px; color:var(--ink); margin:0 0 10px;}
+  .brief-body p .lab{font-weight:700; color:var(--teal-ink);}
+  .chips{display:flex; flex-direction:column; gap:6px; margin:10px 0;}
+  .chip{display:flex; gap:10px; font-size:13.5px;}
+  .chip .k{flex:0 0 auto; width:104px; white-space:nowrap; font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:4px 9px; border-radius:5px; text-align:left; line-height:1.35;}
+  .chip.s .k{background:var(--teal-soft); color:var(--teal-ink);}
+  .chip.m .k{background:var(--gold-soft); color:var(--gold-ink);}
+  .chip.l .k{background:var(--surface-2); color:var(--ink-soft);}
+  .chip .v{color:var(--ink-soft);}
+  .src{font-size:12.5px; font-style:italic; color:var(--ink); margin-top:8px;}
+  .src b{font-style:normal;} .src a{color:var(--teal); text-decoration:underline;}
+  .cap{font-size:12.5px; color:var(--faint); margin-top:12px; text-align:left;}
+
+  /* ---------- BUILD ---------- */
+  .build-grid{display:grid; gap:12px; margin-top:24px;}
+  .bcard{display:flex; gap:15px; align-items:flex-start; background:var(--surface); border:1px solid var(--hairline); border-radius:13px; padding:17px 18px; box-shadow:var(--shadow);}
+  .bcard .ic{flex:0 0 auto; width:40px; height:40px; border-radius:11px; background:var(--teal-soft); color:var(--teal); display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .bcard:nth-child(2) .ic{background:var(--gold-soft); color:var(--gold);}
+  .bcard h3{font-size:16px; margin:0 0 3px;}
+  .bcard p{font-size:14px; color:var(--ink-soft); margin:0;}
+  .free-note{margin-top:16px; font-family:Georgia,serif; font-size:clamp(18px,5vw,23px); color:var(--ink); text-wrap:balance;}
+  .free-note b{color:var(--teal);}
+
+  /* ---------- GLOSSARY ---------- */
+  .glossary{background:var(--surface-2); border-top:1px solid var(--hairline);}
+  .hib{display:grid; gap:10px; margin-top:24px;}
+  .hib-item{background:var(--surface); border:1px solid var(--hairline); border-radius:12px; padding:0 18px; box-shadow:var(--shadow);}
+  .hib-item summary{cursor:pointer; list-style:none; padding:16px 0; font-weight:700; font-size:16px; color:var(--ink); display:flex; justify-content:space-between; align-items:center; gap:14px;}
+  .hib-item summary::-webkit-details-marker{display:none;}
+  .hib-item summary::marker{content:"";}
+  .hib-x{flex:0 0 auto; width:20px; height:20px; position:relative;}
+  .hib-x::before,.hib-x::after{content:""; position:absolute; inset:0; margin:auto; background:var(--teal);}
+  .hib-x::before{width:11px; height:2px;}
+  .hib-x::after{width:2px; height:11px; transition:transform .25s ease;}
+  .hib-item[open] .hib-x::after{transform:scaleY(0);}
+  .hib-a{padding:0 0 17px;}
+  .hib-a p{font-size:14.5px; color:var(--ink-soft); margin:0 0 10px;}
+  .hib-a p:last-child{margin:0;}
+
+  /* ---------- MORE INFO (files / setup) ---------- */
+  .tscroll{overflow-x:auto; margin-top:22px; border:1px solid var(--hairline); border-radius:12px; box-shadow:var(--shadow);}
+  .ftable{width:100%; border-collapse:collapse; font-size:14px; min-width:440px;}
+  .ftable th,.ftable td{text-align:left; padding:12px 15px; border-bottom:1px solid var(--hairline); vertical-align:top;}
+  .ftable th{background:var(--surface-2); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700;}
+  .ftable tr:last-child td{border-bottom:0;}
+  .ftable td:first-child{white-space:nowrap; color:var(--teal-ink); font-weight:600;}
+  .setup{display:grid; gap:12px; margin-top:22px;}
+  .setup .s{background:var(--surface); border:1px solid var(--hairline); border-radius:12px; padding:15px 18px 15px 16px; box-shadow:var(--shadow); display:flex; gap:14px;}
+  .setup .s .num{flex:0 0 auto; width:28px; height:28px; border-radius:8px; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-family:Georgia,serif;}
+  .setup .s h4{margin:2px 0 5px; font-size:15.5px;}
+  .setup .s p{margin:0; font-size:14px; color:var(--ink-soft);}
+
+  a.link{color:var(--teal);}
+  :focus-visible{outline:3px solid var(--teal); outline-offset:2px; border-radius:4px;}
+</style>
+
+<div class="mb">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="wrap">
+      <div class="kicker eyebrow"><span class="dot"></span>Automated Daily Malaysia News Digest</div>
+      <h1 class="serif">The <span class="b">Malaysia</span> Brief</h1>
+      <p class="stand">An AI news assistant that automatically reads Malaysia's news daily and emails our team a business-focused news summary and insight with zero manual effort.</p>
+      <div class="sendchip"><span class="tick"></span><span>Today's brief sent</span></div>
+    </div>
+  </header>
+
+  <!-- PROBLEM -->
+  <section class="problem">
+    <div class="wrap reveal">
+      <p class="lead-label">The problem</p>
+      <h2 class="sec serif">Keeping up with Malaysia's latest developments can take up a significant amount of time.</h2>
+      <p class="body">To stay up to date with developments in Malaysia that could affect Singapore businesses, we each have to frequently trawl several news sites and share relevant news articles found with each other, piecing together what mattered, while possibly missing important developments on a busy day.</p>
+      <p class="body" style="margin-bottom:0;">So we used AI to do it for us instead. Automatically. Here's how.</p>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">How it works</p>
+        <h2 class="sec serif">Four steps, every day &mdash; on its own.</h2>
+        <p class="body">The workflow is fully automated, with no manual effort required.</p>
+      </div>
+
+      <div class="flow reveal" id="flow">
+        <div class="steps">
+          <div class="rail"><span class="fill"></span></div>
+
+          <div class="step gold" data-i="0">
+            <div class="node">1</div>
+            <div class="body-wrap">
+              <div class="tag">Collect</div>
+              <h3>Gather the day's news</h3>
+              <div class="more"><p>It automatically pulls the latest headlines from credible Malaysian and Singapore news outlets (like Malaysiakini, Malay Mail, CNA and The Straits Times).</p></div>
+            </div>
+          </div>
+
+          <div class="step teal" data-i="1">
+            <div class="node">2</div>
+            <div class="body-wrap">
+              <div class="tag">Analyse</div>
+              <h3>Let AI find what matters</h3>
+              <div class="more"><p>A free AI model reads every article headline and picks out what's relevant to Singapore businesses, filtering out the noise.</p></div>
+            </div>
+          </div>
+
+          <div class="step teal" data-i="2">
+            <div class="node">3</div>
+            <div class="body-wrap">
+              <div class="tag">Write</div>
+              <h3>Draft a concise brief</h3>
+              <div class="more"><p>The AI writes a short report: the day's key themes, why they matter for business, and a short / medium / long-term outlook.</p></div>
+            </div>
+          </div>
+
+          <div class="step gold" data-i="3">
+            <div class="node">4</div>
+            <div class="body-wrap">
+              <div class="tag">Deliver</div>
+              <h3>Email the team</h3>
+              <div class="more"><p>The finished brief lands in everyone's inbox daily, automatically.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAMPLE -->
+  <section style="background:var(--surface-2); border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline);">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">The result</p>
+        <h2 class="sec serif">See what lands in the inbox.</h2>
+        <p class="body">This is the kind of brief the team receives &mdash; clear, skimmable, and focused on the business angle.</p>
+      </div>
+      <details class="sample-wrap" id="sampleWrap">
+        <summary class="sample-btn">
+          <span class="ar">&#9656;</span>
+          <span class="lbl-show">Show a sample brief</span>
+          <span class="lbl-hide">Hide the sample brief</span>
+        </summary>
+        <div class="brief" id="brief">
+          <div class="brief-card">
+            <div class="brief-mast">
+              <div class="t serif">Briefing on Malaysia Current Affairs</div>
+              <div class="d">Thursday &middot; 16 July 2026</div>
+            </div>
+            <div class="brief-body">
+              <h4>Executive Summary</h4>
+              <ul>
+                <li><b>Political landscape faces near-term uncertainty</b> &mdash; a tightly contested Negeri Sembilan state election is exposing rifts within the Perikatan Nasional coalition, while a DAP withdrawal in Malacca signals state-level instability that could slow policy.</li>
+                <li><b>Governance and fiscal reforms are underway</b> &mdash; anti-corruption probes into public investments continue, though subsidy delivery and the rapid rise of Buy Now Pay Later (BNPL) remain concerns.</li>
+                <li><b>Singapore&ndash;Malaysia ties are deepening</b> &mdash; the impending RTS Link is expected to boost cross-border retail and F&amp;B in Johor, even as Forest City draws scrutiny over security and unauthorised foreign presence.</li>
+                <li><b>Food security stays a priority</b> &mdash; amid El Ni&ntilde;o and geopolitical risks, the government is moving to safeguard supplies, refine subsidies, and open new export routes for produce like durians.</li>
+              </ul>
+
+              <h4>Theme 1 &middot; Politics &amp; Elections</h4>
+              <p><span class="lab">What is reported:</span> Preparations for the Negeri Sembilan state election are intensifying. Barisan Nasional named 25 candidates and left 11 seats open &mdash; a possible pact with Perikatan Nasional (PN) and PAS. But PN is split: Bersatu says it will contest under its own logo and won't back down from PAS if talks fail. In Malacca, DAP representatives moved to the opposition bench after leaving the state government, despite an appeal from PM Anwar Ibrahim.</p>
+              <p><span class="lab">Why it matters:</span> State-level instability can translate into policy uncertainty and slower decisions for business. For Singapore companies with interests in Negeri Sembilan or Malacca, shifting state governance could change regulatory conditions and development plans &mdash; fluidity that investors typically treat with caution.</p>
+              <div class="chips">
+                <div class="chip s"><span class="k">Short-term<br>0&ndash;3m</span><span class="v">Election uncertainty may slow new approvals; firms with active projects should watch state governance closely.</span></div>
+                <div class="chip m"><span class="k">Medium-term<br>3&ndash;12m</span><span class="v">New coalition priorities could reshape regulation; Malacca's instability may affect infrastructure plans.</span></div>
+                <div class="chip l"><span class="k">Long-term<br>1&ndash;3y</span><span class="v">Outcomes may set precedents for the next federal election and Malaysia's broader policy direction.</span></div>
+              </div>
+              <div class="src"><b>Sources:</b> <a href="#">BN unfazed by possible BN-PN cooperation</a> | <a href="#">Bersatu to contest under own logo</a> | <a href="#">Malacca DAP reps move to opposition bench</a></div>
+
+              <h4>Theme 2 &middot; Governance &amp; Anti-Corruption</h4>
+              <p><span class="lab">What is reported:</span> The government is pressing on anti-corruption and governance. PM Anwar revealed that pension fund KWAP was &ldquo;deceived&rdquo; into a RM200 million overseas investment through fraud, prompting the Public Accounts Committee (PAC) to weigh a probe. The PAC also flagged shortfalls in the cooking-oil subsidy reaching its intended recipients.</p>
+              <p><span class="lab">Why it matters:</span> Tighter oversight of public funds can lift business confidence and signal a more predictable environment, but the cases also expose gaps in current controls. For Singapore firms, cleaner governance lowers risk in partnerships and procurement.</p>
+              <div class="chips">
+                <div class="chip s"><span class="k">Short-term<br>0&ndash;3m</span><span class="v">Probes dominate headlines; limited direct business impact near-term.</span></div>
+                <div class="chip m"><span class="k">Medium-term<br>3&ndash;12m</span><span class="v">Reforms could tighten procurement and subsidy rules affecting some sectors.</span></div>
+                <div class="chip l"><span class="k">Long-term<br>1&ndash;3y</span><span class="v">Sustained anti-corruption efforts may improve Malaysia's investment reputation.</span></div>
+              </div>
+              <div class="src"><b>Sources:</b> <a href="#">Anwar: KWAP deceived in RM200m overseas fraud</a> | <a href="#">PAC weighs probe into public investments</a></div>
+
+              <h4>Other Notable Developments</h4>
+              <ul>
+                <li>Sabah is set to table nine Bills &mdash; including ones on Islamic inheritance and Native Courts &mdash; from 20 July, with possible implications for land tenure and customary rights. <a href="#" class="link">Nine Bills for Sabah assembly sitting</a></li>
+                <li>Police seized 75 bitcoin-mining machines in a Teluk Intan power-theft raid, part of wider efforts to curb illicit power use. <a href="#" class="link">75 mining machines seized</a></li>
+                <li>The MACC remanded a former civil servant over the alleged misuse of RM300,000 in aid payments. <a href="#" class="link">Ex-civil servant under MACC remand</a></li>
+                <li>The Court of Appeal upheld a RM5.83 million penalty in a WCT insider-trading case, reinforcing market-integrity rules. <a href="#" class="link">WCT insider trading appeals dismissed</a></li>
+              </ul>
+            </div>
+          </div>
+          <p class="cap">A short and concise sample, generated from real news headlines.<br>
+          Automatically compiled from several news outlets covering Malaysia and the region, and summarised by AI.
+          Analysis is machine-generated &mdash; please verify the specifics against the linked sources.<br>
+          A full AI log is attached, showing exactly what was sent to the AI and the output it produced.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- BUILD -->
+  <section style="background:var(--surface-2); border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline);">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">Under the hood</p>
+        <h2 class="sec serif">Built from simple, free parts.</h2>
+        <p class="body">No fancy infrastructure &mdash; just a few free tools wired together.</p>
+      </div>
+      <div class="build-grid reveal">
+        <div class="bcard"><div class="ic">&#9200;</div><div><h3>A free daily run on GitHub</h3><p>GitHub Actions &mdash; a free scheduling service from GitHub &mdash; automatically starts the tool once a day. No need to rent a server or keep a laptop running 24/7 just to trigger the daily task.</p></div></div>
+        <div class="bcard"><div class="ic">&#128013;</div><div><h3>A short Python script</h3><p>A small program written in Python (a popular, beginner-friendly programming language) fetches the day's news from the news sites and sends out the finished email. It handles all the plumbing.</p></div></div>
+        <div class="bcard"><div class="ic">&#129302;</div><div><h3>A free Gemini AI model</h3><p>Google's Gemini AI reads the headlines and writes the summary, picking out what matters for Singapore businesses. It runs on Google's free tier, so it costs nothing.</p></div></div>
+      </div>
+      <p class="free-note reveal">No server. No subscriptions. <b>It runs itself, for free.</b></p>
+    </div>
+  </section>
+
+  <!-- GLOSSARY (expand for the technical details) -->
+  <section class="glossary">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">Curious how it works?</p>
+        <h2 class="sec serif">The tech, in plain words.</h2>
+        <p class="body">A handful of free tools, wired together. Tap any term to expand &mdash; only if you want the detail.</p>
+      </div>
+      <div class="hib">
+        <details class="hib-item"><summary>What is GitHub, and why is it needed?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>A website that stores the project's files and also runs it automatically on a free schedule &mdash; so there's no server to rent and no laptop to leave on. That's a big reason it costs nothing to run.</p></div>
+        </details>
+        <details class="hib-item"><summary>What is RSS?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>A tidy, machine-readable list of a news site's latest articles. News sites publish it so software can read their headlines without a human clicking around. The tool reads these to gather each day's news.</p></div>
+        </details>
+        <details class="hib-item"><summary>What does the AI (and its &ldquo;API&rdquo;) do?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>The AI is the brain that reads the headlines and writes the summary. The &ldquo;API&rdquo; is simply the doorway our program uses to send the headlines to the AI and get the finished brief back &mdash; over the internet. A secret &ldquo;key&rdquo; tells Google the request is ours, on the free tier.</p></div>
+        </details>
+        <details class="hib-item"><summary>How does it send the email?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>Through a standard email method called SMTP, using a free Gmail account. The AI writes the brief in plain text; our code turns it into a tidy, formatted email and delivers it to everyone on the list, automatically.</p></div>
+        </details>
+        <details class="hib-item"><summary>Is it really free? Is it safe?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>Yes &mdash; it runs entirely on free tiers. Any passwords or keys are stored encrypted, never inside the code, and the tool only reads public news.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FREQUENTLY ASKED QUESTIONS -->
+  <section>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">Good to know</p>
+        <h2 class="sec serif">Frequently Asked Questions.</h2>
+        <p class="body">Tap any question to expand.</p>
+      </div>
+      <div class="hib">
+        <details class="hib-item"><summary>How much does it cost to run?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>Nothing. It runs entirely on free tiers &mdash; GitHub for scheduling, Gemini's free AI tier, and Gmail. The only paid option (a stronger AI model) was deliberately left out to keep it free.</p></div>
+        </details>
+        <details class="hib-item"><summary>Is the data safe? Where do the passwords live?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>The AI key and email password are stored as encrypted secrets in GitHub &mdash; never written in the code and never shown in logs. The tool only reads public news headlines; it doesn't touch sensitive internal data.</p></div>
+        </details>
+        <details class="hib-item"><summary>Could it cover other countries or topics?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>Easily. Point it at different news sources and adjust the AI's instructions, and the same tool becomes a brief on any market or topic. That's exactly why the code is shared.</p></div>
+        </details>
+        <details class="hib-item"><summary>How accurate is the AI? Could it make things up?<span class="hib-x"></span></summary>
+          <div class="hib-a"><p>The brief is a helpful first read, not gospel &mdash; every email says so and links back to the original articles. The AI is told to separate fact from analysis and not invent specifics, and a full log of what it was given and wrote is attached to every email for checking.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW AI HELPED -->
+  <section style="background:var(--surface-2); border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline);">
+    <div class="wrap reveal">
+      <p class="lead-label">Transparent about the build</p>
+      <h2 class="sec serif">How AI helped build it.</h2>
+      <p class="body" style="margin-bottom:0;">This project was built with an AI coding assistant (Claude Code) &mdash; directing the decisions while it did the heavy lifting on the code: writing and refining the Python script, crafting the AI's instructions, setting up the daily schedule and the email formatting, debugging problems along the way, and building this very website. The point of the festival, really: these tools let non-specialists build real, working things.</p>
+    </div>
+  </section>
+
+  <!-- WHAT'S INSIDE -->
+  <section>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">A peek inside</p>
+        <h2 class="sec serif">What's inside the project.</h2>
+        <p class="body">The whole tool is just a handful of files in one place &mdash; no database, no server. Here's what each one does.</p>
+      </div>
+      <div class="tscroll reveal">
+        <table class="ftable">
+          <tr><th>File</th><th>What it is</th></tr>
+          <tr><td>news_bot.py</td><td>The main program &mdash; fetches the news, asks the AI, and sends the email.</td></tr>
+          <tr><td>daily_news.yml</td><td>The daily timer &mdash; tells GitHub when and how to run the script.</td></tr>
+          <tr><td>requirements.txt</td><td>The short list of free add-on tools the script needs. GitHub installs these automatically.</td></tr>
+          <tr><td>README.md</td><td>The full handbook: how it works, how to run and change it, and how to fix common issues.</td></tr>
+          <tr><td>OVERVIEW.md</td><td>A one-page, non-technical summary for sharing with colleagues.</td></tr>
+          <tr><td>CLAUDE.md</td><td>The project's decisions log &mdash; notes used when building with the AI assistant.</td></tr>
+          <tr><td>.gitignore</td><td>Housekeeping &mdash; tells GitHub which throwaway files to ignore.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILD YOUR OWN -->
+  <section style="background:var(--surface-2); border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline);">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="lead-label">For other teams</p>
+        <h2 class="sec serif">Build your own version.</h2>
+        <p class="body">It's designed to be copied and pointed at any market &mdash; just change the news sources. You'll need three free accounts and three secret keys.</p>
+      </div>
+      <div class="setup reveal">
+        <div class="s"><div class="num">1</div><div><h4>Copy the project</h4><p>Fork the public code to get your own copy, then swap in your market's news sources and your team's email addresses.</p></div></div>
+        <div class="s"><div class="num">2</div><div><h4>Get a free Gemini AI key</h4><p>At aistudio.google.com, create an API key in a project with no billing enabled, so it stays on the genuine free tier.</p></div></div>
+        <div class="s"><div class="num">3</div><div><h4>Set up a sending Gmail</h4><p>Turn on 2-Step Verification, then create a 16-character &ldquo;App Password&rdquo; &mdash; a normal password won't work for a script.</p></div></div>
+        <div class="s"><div class="num">4</div><div><h4>Store three secrets in GitHub</h4><p>Add the AI key, the Gmail address, and the App Password under Settings &rarr; Secrets. They're stored encrypted and never appear in the code.</p></div></div>
+        <div class="s"><div class="num">5</div><div><h4>Test it, then let it run</h4><p>Trigger it once from the Actions tab to confirm the email arrives &mdash; after that, it runs itself on the daily schedule.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Scroll reveals - only enable the hide-then-reveal animation once we know
+     IntersectionObserver can drive it. Otherwise content stays visible (default). */
+  var revs = document.querySelectorAll(".reveal");
+  if("IntersectionObserver" in window && !reduce){
+    document.documentElement.classList.add("js-anim");
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);} });
+    }, {threshold:.12});
+    revs.forEach(function(r){ io.observe(r); });
+  }
+
+  /* Pipeline autoplay - lights up each numbered step in turn as it scrolls in */
+  var flow = document.getElementById("flow");
+  var steps = flow ? Array.prototype.slice.call(flow.querySelectorAll(".step")) : [];
+  function lightSequential(){
+    flow.classList.add("playing");
+    steps.forEach(function(s,i){ setTimeout(function(){ s.classList.add("on"); }, 260*i + 200); });
+  }
+  var lit = false;
+  function runFlow(){ if(lit) return; lit = true; lightSequential(); }
+  if(steps.length){
+    if(reduce){ flow.classList.add("playing"); steps.forEach(function(s){s.classList.add("on");}); }
+    else if("IntersectionObserver" in window){
+      var pio = new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ runFlow(); pio.disconnect(); } });
+      }, {threshold:.15});
+      pio.observe(flow);
+      /* Safety net: if the observer never fires (some browsers/short pages),
+         still light up the numbers so they never stay grey. */
+      setTimeout(runFlow, 2500);
+    } else { runFlow(); }
+  }
+
+  /* Sample brief uses a native <details> element - no JavaScript needed. */
+
+})();
+</script>
+</body>
+</html>
